@@ -1,12 +1,19 @@
 import 'package:flutter/cupertino.dart';
+import 'package:logger/logger.dart';
 
-void main() => runApp(const MyApp());
+final Logger logger = Logger();
+
+void main() {
+  logger.i('Iniciando aplicativo');
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
+    logger.d('Construindo MyApp (CupertinoApp)');
     return const CupertinoApp(
       debugShowCheckedModeBanner: false,
       home: HomeTabs(),
@@ -22,8 +29,7 @@ class HomeTabs extends StatefulWidget {
 }
 
 class _HomeTabsState extends State<HomeTabs> {
-  final CupertinoTabController _controller =
-      CupertinoTabController(initialIndex: 0);
+  late final CupertinoTabController _controller;
 
   static const List<String> _titles = [
     'Configurações',
@@ -33,7 +39,25 @@ class _HomeTabsState extends State<HomeTabs> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _controller = CupertinoTabController(initialIndex: 0);
+    logger.i(
+        'HomeTabs inicializado na aba ${_controller.index} (${_titles[_controller.index]})');
+    int _lastIndex = _controller.index;
+    _controller.addListener(() {
+      // só logar quando o índice efetivamente mudar
+      if (_controller.index != _lastIndex) {
+        _lastIndex = _controller.index;
+        logger.i(
+            'Aba selecionada: ${_controller.index} (${_titles[_controller.index]})');
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    logger.v('Construindo CupertinoTabScaffold');
     return CupertinoTabScaffold(
       controller: _controller,
       tabBar: CupertinoTabBar(
@@ -57,6 +81,7 @@ class _HomeTabsState extends State<HomeTabs> {
         ],
       ),
       tabBuilder: (context, index) {
+        logger.d('Construindo conteúdo da aba $index (${_titles[index]})');
         return CupertinoTabView(
           builder: (context) {
             return CupertinoPageScaffold(
@@ -81,6 +106,7 @@ class _HomeTabsState extends State<HomeTabs> {
 
   @override
   void dispose() {
+    logger.i('Descartando HomeTabs e controlador de abas');
     _controller.dispose();
     super.dispose();
   }
