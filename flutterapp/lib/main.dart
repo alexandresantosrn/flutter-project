@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
-import 'package:logger/logger.dart';
-
-final Logger logger = Logger();
+import 'src/utils/logger.dart';
+import 'src/pages/settings_page.dart';
+import 'src/pages/action_page.dart';
+import 'src/pages/statistics_page.dart';
+import 'src/pages/history_page.dart';
 
 void main() {
   logger.i('Iniciando aplicativo');
@@ -38,6 +40,13 @@ class _HomeTabsState extends State<HomeTabs> {
     'Histórico',
   ];
 
+  final List<Widget> _pages = const [
+    SettingsPage(),
+    ActionPage(),
+    StatisticsPage(),
+    HistoryPage(),
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -46,7 +55,6 @@ class _HomeTabsState extends State<HomeTabs> {
         'HomeTabs inicializado na aba ${_controller.index} (${_titles[_controller.index]})');
     int _lastIndex = _controller.index;
     _controller.addListener(() {
-      // só logar quando o índice efetivamente mudar
       if (_controller.index != _lastIndex) {
         _lastIndex = _controller.index;
         logger.i(
@@ -89,13 +97,7 @@ class _HomeTabsState extends State<HomeTabs> {
                 middle: Text(_titles[index]),
               ),
               child: SafeArea(
-                child: Center(
-                  child: Text(
-                    _titles[index],
-                    style: const TextStyle(
-                        fontSize: 28, fontWeight: FontWeight.w600),
-                  ),
-                ),
+                child: _pages[index],
               ),
             );
           },
