@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
+import 'src/utils/logger.dart';
+import 'src/pages/settings_page.dart';
+import 'src/pages/action_page.dart';
+import 'src/pages/statistics_page.dart';
+import 'src/pages/history_page.dart';
 
-void main() => runApp(const MyApp());
+void main() {
+  logger.i('Iniciando app');
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
+    logger.d('Construindo MyApp (MaterialApp)');
     return MaterialApp(
       title: 'Flutterapp',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: false,
-        primarySwatch: Colors.blue,
-      ),
+      theme: ThemeData(useMaterial3: false, primarySwatch: Colors.blue),
       home: const HomePage(),
     );
   }
@@ -27,7 +33,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // 0 = Configurações (padrão)
   int _currentIndex = 0;
 
   static const List<String> _titles = [
@@ -37,33 +42,23 @@ class _HomePageState extends State<HomePage> {
     'Histórico',
   ];
 
-  static const List<Widget> _pages = [
-    Center(
-        child: Text('Configurações',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600))),
-    Center(
-        child: Text('Ação',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600))),
-    Center(
-        child: Text('Estatísticas',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600))),
-    Center(
-        child: Text('Histórico',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600))),
+  final List<Widget> _pages = const [
+    SettingsPage(),
+    ActionPage(),
+    StatisticsPage(),
+    HistoryPage(),
   ];
 
   void _onTap(int index) {
     if (index == _currentIndex) return;
     setState(() => _currentIndex = index);
+    logger.i('Aba selecionada: $index (${_titles[index]})');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_titles[_currentIndex]),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: Text(_titles[_currentIndex]), centerTitle: true),
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
