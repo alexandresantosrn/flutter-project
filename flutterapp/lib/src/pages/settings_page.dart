@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -8,6 +9,11 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  static const _kNotifications = 'settings_notifications';
+  static const _kSelectedTime = 'settings_selected_time';
+  static const _kDarkMode = 'settings_dark_mode';
+  static const _kLessonSize = 'settings_lesson_size';
+
   bool _notifications = true;
   bool _darkMode = false;
   String _selectedTime = '12:00';
@@ -19,6 +25,31 @@ class _SettingsPageState extends State<SettingsPage> {
     final minutes = (i % 2 == 0) ? '00' : '30';
     return '$hours:$minutes';
   });
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _notifications = prefs.getBool(_kNotifications) ?? true;
+      _selectedTime = prefs.getString(_kSelectedTime) ?? '12:00';
+      _darkMode = prefs.getBool(_kDarkMode) ?? false;
+      _lessonSize = prefs.getInt(_kLessonSize) ?? 5;
+    });
+  }
+
+  Future<void> _saveSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kNotifications, _notifications);
+    await prefs.setString(_kSelectedTime, _selectedTime);
+    await prefs.setBool(_kDarkMode, _darkMode);
+    await prefs.setInt(_kLessonSize, _lessonSize);
+  }
 
   Future<void> _pickTime() async {
     if (!_notifications) return;
@@ -96,6 +127,7 @@ class _SettingsPageState extends State<SettingsPage> {
       setState(() {
         _selectedTime = _times[result];
       });
+      await _saveSettings();
     }
   }
 
@@ -119,7 +151,10 @@ class _SettingsPageState extends State<SettingsPage> {
                     borderRadius: BorderRadius.circular(8)),
                 elevation: selected ? 2 : 0,
               ),
-              onPressed: () => setState(() => _lessonSize = opt),
+              onPressed: () async {
+                setState(() => _lessonSize = opt);
+                await _saveSettings();
+              },
               child: Text(
                 '$opt',
                 style:
@@ -150,7 +185,10 @@ class _SettingsPageState extends State<SettingsPage> {
         SwitchListTile(
           title: const Text('Notificações'),
           value: _notifications,
-          onChanged: (v) => setState(() => _notifications = v),
+          onChanged: (v) async {
+            setState(() => _notifications = v);
+            await _saveSettings();
+          },
         ),
 
         // Horário de notificação
@@ -173,7 +211,10 @@ class _SettingsPageState extends State<SettingsPage> {
         SwitchListTile(
           title: const Text('Modo escuro'),
           value: _darkMode,
-          onChanged: (v) => setState(() => _darkMode = v),
+          onChanged: (v) async {
+            setState(() => _darkMode = v);
+            await _saveSettings();
+          },
         ),
 
         const SizedBox(height: 16),
