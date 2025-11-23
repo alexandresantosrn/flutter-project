@@ -1,32 +1,48 @@
 import 'package:flutter/material.dart';
 import 'src/utils/logger.dart';
+import 'src/utils/prefs.dart';
 import 'src/pages/settings_page.dart';
 import 'src/pages/action_page.dart';
 import 'src/pages/statistics_page.dart';
 import 'src/pages/history_page.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   logger.i('Iniciando app');
-  runApp(const MyApp());
+
+  final settings = await SettingsPrefs.load();
+  final isDark = ValueNotifier<bool>(settings.darkMode);
+
+  runApp(MyApp(isDark: isDark));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final ValueNotifier<bool> isDark;
+  const MyApp({super.key, required this.isDark});
 
   @override
   Widget build(BuildContext context) {
     logger.d('Construindo MyApp (MaterialApp)');
-    return MaterialApp(
-      title: 'Flutterapp',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(useMaterial3: false, primarySwatch: Colors.blue),
-      home: const HomePage(),
+    return ValueListenableBuilder<bool>(
+      valueListenable: isDark,
+      builder: (context, dark, _) {
+        return MaterialApp(
+          title: 'Flutterapp',
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData.light()
+              .copyWith(useMaterial3: false, primaryColor: Colors.blue),
+          darkTheme: ThemeData.dark().copyWith(useMaterial3: false),
+          themeMode: dark ? ThemeMode.dark : ThemeMode.light,
+          home: HomePage(isDark: isDark),
+        );
+      },
     );
   }
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final ValueNotifier<bool> isDark;
+  const HomePage({super.key, required this.isDark});
 
   @override
   _HomePageState createState() => _HomePageState();
@@ -42,12 +58,18 @@ class _HomePageState extends State<HomePage> {
     'Histórico',
   ];
 
-  final List<Widget> _pages = const [
-    SettingsPage(),
-    ActionPage(),
-    StatisticsPage(),
-    HistoryPage(),
-  ];
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      SettingsPage(isDark: widget.isDark),
+      const ActionPage(),
+      const StatisticsPage(),
+      const HistoryPage(),
+    ];
+  }
 
   void _onTap(int index) {
     if (index == _currentIndex) return;

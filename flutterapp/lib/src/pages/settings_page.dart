@@ -1,21 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/prefs.dart';
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({super.key});
+  final ValueNotifier<bool> isDark;
+  const SettingsPage({super.key, required this.isDark});
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  static const _kNotifications = 'settings_notifications';
-  static const _kSelectedTime = 'settings_selected_time';
-  static const _kDarkMode = 'settings_dark_mode';
-  static const _kLessonSize = 'settings_lesson_size';
-
   bool _notifications = true;
-  bool _darkMode = false;
   String _selectedTime = '12:00';
   int _lessonSize = 5;
 
@@ -33,22 +28,27 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
+    final data = await SettingsPrefs.load();
     if (!mounted) return;
     setState(() {
-      _notifications = prefs.getBool(_kNotifications) ?? true;
-      _selectedTime = prefs.getString(_kSelectedTime) ?? '12:00';
-      _darkMode = prefs.getBool(_kDarkMode) ?? false;
-      _lessonSize = prefs.getInt(_kLessonSize) ?? 5;
+      _notifications = data.notifications;
+      _selectedTime = data.selectedTime;
+      _lessonSize = data.lessonSize;
+      // atualiza o notifier caso divergente
+      if (widget.isDark.value != data.darkMode) {
+        widget.isDark.value = data.darkMode;
+      }
     });
   }
 
   Future<void> _saveSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_kNotifications, _notifications);
-    await prefs.setString(_kSelectedTime, _selectedTime);
-    await prefs.setBool(_kDarkMode, _darkMode);
-    await prefs.setInt(_kLessonSize, _lessonSize);
+    final data = SettingsData(
+      notifications: _notifications,
+      selectedTime: _selectedTime,
+      darkMode: widget.isDark.value,
+      lessonSize: _lessonSize,
+    );
+    await SettingsPrefs.save(data);
   }
 
   Future<void> _pickTime() async {
@@ -131,7 +131,6 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  // substitui _lessonSizeChips() antigo
   Widget _lessonSizeChips(BuildContext context) {
     final options = [5, 10, 15];
     return Row(
@@ -207,13 +206,14 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         const Divider(),
 
-        // Modo escuro
+        // Modo noturno (atualiza notifier e salva)
         SwitchListTile(
-          title: const Text('Modo escuro'),
-          value: _darkMode,
+          title: const Text('Modo noturno'),
+          value: widget.isDark.value,
           onChanged: (v) async {
-            setState(() => _darkMode = v);
+            widget.isDark.value = v;
             await _saveSettings();
+            if (mounted) setState(() {}); // atualiza UI local se necessário
           },
         ),
 
@@ -224,12 +224,14 @@ class _SettingsPageState extends State<SettingsPage> {
         const SizedBox(height: 24),
 
         ElevatedButton(
-          onPressed: () {
+          onPressed: () async {
+            await _saveSettings();
             final snack =
                 'Notificações: ${_notifications ? 'Ativas' : 'Desativadas'} • '
                 'Horário: $_selectedTime • Lição diária: $_lessonSize palavras';
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(snack)));
+            if (mounted)
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(SnackBar(content: Text(snack)));
           },
           child: const Text('Salvar Configurações'),
         ),
