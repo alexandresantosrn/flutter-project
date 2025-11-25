@@ -27,6 +27,9 @@ class _ActionPageState extends State<ActionPage> {
   List<String> _currentOptions = [];
 
   bool _finished = false;
+  // guarda a resposta selecionada para cada pergunta (en)
+  List<String?> _answers = [];
+  DateTime? _startTime;
 
   @override
   void initState() {
@@ -54,6 +57,8 @@ class _ActionPageState extends State<ActionPage> {
       _finished = false;
       _answered = false;
       _selectedOptionIndex = null;
+      _answers = List<String?>.filled(_questions.length, null);
+      _startTime = DateTime.now();
     });
     _prepareOptions();
   }
@@ -90,17 +95,52 @@ class _ActionPageState extends State<ActionPage> {
     final current = _questions[_currentIndex];
     final correct = current['en']!;
     final selected = _currentOptions[idx];
+    // guarda resposta do usuário
+    _answers[_currentIndex] = selected;
     if (selected == correct) _correctCount++;
 
     Future.delayed(const Duration(milliseconds: 700), () {
       if (!mounted) return;
       if (_currentIndex + 1 >= _questions.length) {
-        setState(() => _finished = true);
+        _finalizeQuiz();
       } else {
         setState(() => _currentIndex++);
         _prepareOptions();
       }
     });
+  }
+
+  Future<void> _finalizeQuiz() async {
+    final end = DateTime.now();
+    final durationSeconds =
+        _startTime == null ? null : end.difference(_startTime!).inSeconds;
+
+    // montar detalhes por questão
+    final details = <Map<String, dynamic>>[];
+    for (var i = 0; i < _questions.length; i++) {
+      final q = _questions[i];
+      details.add({
+        'pt': q['pt'],
+        'en': q['en'],
+        'selected':
+            _answers.length > i && _answers[i] != null ? _answers[i] : '',
+        'correct': q['en'],
+      });
+    }
+
+    try {
+      await DBHelper.insertAttempt(
+        total: _questions.length,
+        correct: _correctCount,
+        durationSeconds: durationSeconds,
+        details: details,
+      );
+    } catch (_) {
+      // ignore DB write errors (não bloqueia UI)
+    }
+
+    if (!mounted) return;
+    setState(() => _finished = true);
   }
 
   @override
