@@ -38,6 +38,15 @@ dependencies:
   logger: ^2.6.2
   shared_preferences: ^2.5.3
 
+  # notificações (se já não tiver)
+  flutter_local_notifications: ^19.5.0
+  timezone: ^0.10.1
+  flutter_native_timezone: ^2.0.0
+
+  # SQLite
+  sqflite: ^2.2.7
+  path: ^1.8.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
